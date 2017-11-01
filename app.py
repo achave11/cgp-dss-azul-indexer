@@ -262,8 +262,18 @@ def write_index(bundle_uuid):
             es_json.append({missing_key: "None"})
         # write_es(es_json, file_uuid)
         write_es(es_json, es_uuid, es_index)
+        # OK, trying to insert my project index doc creator here... really need to refactor this method!
+        es_project_json = make_projects_json(es_json, es_uuid, es_index+"_projects")
+        write_es(es_project_json, es_uuid, es_index+"_projects")
     app.log.info("13")
     return json.dumps(bundle['data_files'])
+
+# method that will attempt to merge existing project entry with a files json
+# obviously, this is not a viable long-term approach but I want to see if this will
+# let me do something simple
+def make_projects_json(es_json, es_uuid, es_index):
+    # just return this json now
+    return(es_json)
 
 # used by write_index to recursively return values of items in config file
 def look_file(c_item, file, name):
