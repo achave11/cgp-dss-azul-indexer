@@ -11,6 +11,7 @@ from aws_requests_auth import boto_utils
 import collections
 import re
 import random
+
 app = Chalice(app_name=os.getenv('INDEXER_NAME', 'dss-indigo'))
 app.debug = True
 app.log.setLevel(logging.DEBUG)
@@ -46,7 +47,10 @@ else:
         use_ssl=False
     )
 #es.indices.delete(index=es_index, ignore=[400])
+# file index
 es.indices.create(index=es_index, ignore=[400])
+# project index
+es.indices.create(index=es_index+"_projects", ignore=[400])
 # used by write_index to flatten nested arrays, also used for mapping
 # from https://stackoverflow.com/a/2158532
 
@@ -70,36 +74,7 @@ def es_config(c_item, name):
     else:
         name = str(name) + str(c_item)
         return (name)
-# ES mapping
-try:
-    with open('chalicelib/config.json') as f:
-        config = json.loads(f.read())
-except Exception as e:
-    print(e)
-    raise NotFoundError("chalicelib/config.json file does not exist")
-# key_names = ['bundle_uuid', 'dirpath', 'file_name']
-key_names = ['bundle_uuid', 'file_name', 'file_name', 'file_uuid', 'file_version', 'file_format','bundle_type']
-for c_key, c_value in config.items():
-    for c_item in c_value:
-        key_names.append(es_config(c_item, ""))
-key_names = flatten(key_names)
-es_mappings = []
-for item in key_names:
-    es_mappings.append({item : {"type":"keyword"}})
-# file size is different than other key names
-es_mappings.append({"file_size" : {"type":"long"}})
-es_keys = []
-es_values = []
-for item in es_mappings:
-    if item is not None:
-        for key, value in item.items():
-            es_keys.append(key)
-            es_values.append(value)
-    es_file = dict(zip(es_keys, es_values))
-final_mapping = '{"properties":'+json.dumps(es_file)+'}'
-print(final_mapping)
-es.indices.put_mapping(index=es_index,
-    doc_type="document", body = final_mapping)
+
 # for blue box notification
 @app.route('/', methods=['GET', 'POST'])
 def post_notification():
@@ -110,10 +85,10 @@ def post_notification():
     write_index(bundle_uuid)
     return {"bundle_uuid":bundle_uuid}
 
-
 @app.route('/escheck')
 def es_check():
     return json.dumps(es.info())
+
 # note: Support CORS by adding app.route('/', cors=True)
 # returns the name and file uuids sorted by data and json files
 @app.route('/bundle/{bundle_uuid}', methods=['GET'])
@@ -128,7 +103,7 @@ def get_bundles(bundle_uuid):
     retries = 0
     while retries < 3:
         try:
-            json_str = urlopen(str(bb_host + ('v1/bundles/') + bundle_uuid)).read()
+            json_str = urlopen(str(bb_host + ('v1/bundles/') + bundle_uuid + "?replica=aws")).read()
             bundle = json.loads(json_str)
             break
         except HTTPError as er:
@@ -148,7 +123,6 @@ def get_bundles(bundle_uuid):
         app.log.error("Maximum number of retries reached: {}".format(retries))
         raise Exception("Unable to access bundle '%s'" % bundle_uuid)
 
-
     json_files = []
     data_files = []
     for file in bundle['bundle']['files']:
@@ -158,6 +132,7 @@ def get_bundles(bundle_uuid):
             # data_files.append({file["name"]: file["uuid"]}) CARLOS REMOVED THIS
             data_files.append({file["name"]: file})
     return json.dumps({'json_files': json_files, 'data_files': data_files})
+
 # returns the file
 @app.route('/file/{file_uuid}', methods=['GET'])
 def get_file(file_uuid):
@@ -172,6 +147,7 @@ def get_file(file_uuid):
         app.log.info(e)
         raise NotFoundError("File '%s' does not exist" % file_uuid)
     return json.dumps(file)
+
 # indexes the files in the bundle
 @app.route('/write/{bundle_uuid}')
 def write_index(bundle_uuid):
@@ -285,9 +261,10 @@ def write_index(bundle_uuid):
         for missing_key in missing_keys:
             es_json.append({missing_key: "None"})
         # write_es(es_json, file_uuid)
-        write_es(es_json, es_uuid)
+        write_es(es_json, es_uuid, es_index)
     app.log.info("13")
     return json.dumps(bundle['data_files'])
+
 # used by write_index to recursively return values of items in config file
 def look_file(c_item, file, name):
     app.log.info("look_file %s", c_item)
@@ -311,7 +288,7 @@ def look_file(c_item, file, name):
         return ({name: file_value})
 
 # used by write_index to add to ES
-def write_es(es_json, file_uuid):
+def write_es(es_json, file_uuid, es_index_name):
     app.log.info("write_es %s", file_uuid)
     es_keys = []
     es_values = []
@@ -327,14 +304,16 @@ def write_es(es_json, file_uuid):
     app.log.info("es12.4")
     es_file = dict(zip(es_keys, es_values))
     app.log.info("write_es es_file %s", str(es_file))
-    res = es.index(index=es_index, doc_type='document',
+    res = es.index(index=es_index_name, doc_type='document',
                    id=file_uuid, body=es_file)
     app.log.info("es12.6")
     return(res['created'])
+
 # daily scan of the blue box
 @app.schedule('rate(1 day)')
 def every_day(event, context):
     pass
+
 @app.route('/cron')
 def cron_look():
     headers = {"content-type": "application/json",
@@ -351,3 +330,40 @@ def cron_look():
         write_index(bundle_mod)
     app.log.info({"bundle_id": bundle_ids})
     return {"bundle_id": bundle_ids}
+
+
+# MAIN
+# ES mapping
+try:
+    with open('chalicelib/config.json') as f:
+        config = json.loads(f.read())
+except Exception as e:
+    print(e)
+    raise NotFoundError("chalicelib/config.json file does not exist")
+# key_names = ['bundle_uuid', 'dirpath', 'file_name']
+key_names = ['bundle_uuid', 'file_name', 'file_name', 'file_uuid', 'file_version', 'file_format','bundle_type']
+for c_key, c_value in config.items():
+    for c_item in c_value:
+        key_names.append(es_config(c_item, ""))
+key_names = flatten(key_names)
+es_mappings = []
+for item in key_names:
+    es_mappings.append({item : {"type":"keyword"}})
+# file size is different than other key names
+es_mappings.append({"file_size" : {"type":"long"}})
+es_keys = []
+es_values = []
+for item in es_mappings:
+    if item is not None:
+        for key, value in item.items():
+            es_keys.append(key)
+            es_values.append(value)
+    es_file = dict(zip(es_keys, es_values))
+final_mapping = '{"properties":'+json.dumps(es_file)+'}'
+print(final_mapping)
+# put mapping for file index
+es.indices.put_mapping(index=es_index,
+    doc_type="document", body = final_mapping)
+# put mapping for project index
+#es.indices.put_mapping(index=es_index+"_projects",
+#    doc_type="document", body = final_mapping)
