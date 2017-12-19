@@ -324,14 +324,157 @@ class FileIndexer(Indexer):
 
 
 class DonorIndexer(Indexer):
-    """index method calls:.
-
-    - special_fields
-    - merge
-    - load_mapping
-        - create_mapping
-    - load_doc
-
+    """Create donor-oriented index
     """
 
-    pass
+    def index(self, bundle_uuid, bundle_version, **kwargs):
+        """Indexes the data files.
+
+        Triggers the actual indexing process
+        :param bundle_uuid: The bundle_uuid of the bundle that will be indexed.
+        :param bundle_version: The bundle of the version.
+        """
+
+        # Get the config driving indexing (e.g. the required entries)
+        contents = self.__get_item(self.metadata_files)
+        # Get the special fields added to the contents
+        for _file in self.data_files.values():
+            es_uuid = "{}:{}".format(bundle_uuid, _file['uuid'])
+            special_ = self.special_fields(_file,
+                                           contents,
+                                           bundle_uuid=bundle_uuid,
+                                           bundle_version=bundle_version,
+                                           es_uuid=es_uuid)
+            contents = {**contents, **special_}
+            self.load_doc(doc_contents=contents, doc_uuid=es_uuid)
+
+    def __get_item(self, D):
+        """
+        "c" in c_item stands for configuration item.
+        "name" is essentially the key in the future index.
+        """
+        contents = {}
+
+        contents['age'] = D['sample.json']['donor']['age']
+        contents['age_unit'] =D['sample.json']['donor']['age_unit']
+        contents['body_mass_index'] = D['sample.json']['donor']['body_mass_index']
+        contents['disease'] = {'text': D['sample.json']['donor']['disease']['text']}
+        contents['id'] = D['sample.json']['donor']['id']
+        contents['life_stage'] = D['sample.json']['donor']['life_stage']
+        contents['ncbi_taxon'] = D['sample.json']['donor']['ncbi_taxon']
+        contents['sex'] = D['sample.json']['donor']['sex']
+        contents['species'] = D['sample.json']['donor']['species']
+        return contents
+
+    def special_fields(self, data_file, present_fields, **kwargs):
+        """
+        Add any special fields that may be missing.
+
+        Gets any special field that may not be available directly from the
+        metadata.
+
+        :param data_file: a dictionary describing the file in question.
+        :param present_fields: dictionary with available fields.
+        :param kwargs: any additional entries you want to include.
+        :return: a dictionary of all the special fields to be added.
+        """
+        # Get all the fields from a single file into a dictionary
+        file_data = {'file_{}'.format(key): value
+                     for key, value in data_file.items()}
+        # Add extra field that should go in here (e.g. es_uuid, bundle_uuid)
+        extra_fields = {key: value for key, value in kwargs.items()}
+        # Get the file format
+        file_format = self.__get_format(file_data['file_name'])
+        # Create a dictionary with the file fomrat and the bundle type
+        computed_fields = {"file_format": file_format,
+                           "bundle_type": self.__get_bundle_type(file_format)}
+        # Get all the requested entries that should go in ElasticSearch
+        req_entries = self.index_mapping_config['requested_entries']
+        all_fields = {entry for entry in self.__get_item_rec(req_entries, "")}
+        # Make a set out of the fields present in the data
+        present_keys = set(present_fields.keys())
+        # Add empty fields as the string 'None'
+        empty = {field: "None" for field in all_fields - present_keys}
+        # Merge the four dictionaries
+        all_data = {**file_data, **extra_fields, **computed_fields, **empty}
+        return all_data
+
+    def create_mapping(self, **kwargs):
+        """
+        Return the mapping as a string.
+
+        Pulls the mapping from the index_mapping_config.
+        """
+        # Return the es_mapping from the index_mapping_config
+        mapping_config = self.index_mapping_config['es_mapping']
+        return json.dumps(mapping_config)
+
+    def __get_format(self, file_name):
+        """
+        HACK This is to get the file format while we get a file format.
+
+        We need to get the file format from the Blue Box team somehow.
+        This is a small parsing hack while we get a response.
+
+        :param file_name: A string containing the the file name with extension
+        """
+        # Get everything after the period
+        file_format = '.'.join(file_name.split('.')[1:])
+        file_format = file_format if file_format != '' else 'Unknown'
+        return file_format
+
+    def __get_bundle_type(self, file_extension):
+        """
+        HACK This is to get the bundle type while we wait for Blue Box team.
+
+        We need to get the bundle type from the Blue Box team somehow.
+        This is a small parsing hack while we get a response from them.
+
+        :param file_name: A string containing the the file extension
+        """
+        # A series of if else statements to figure out the bundle type
+        # HACK
+        if 'analysis.json' in self.metadata_files:
+            bundle_type = 'Analysis'
+        elif re.search(r'(tiff)', str(file_extension)):
+            bundle_type = 'Imaging'
+        elif re.search(r'(fastq.gz)', str(file_extension)):
+            bundle_type = 'scRNA-Seq Upload'
+        else:
+            bundle_type = 'Unknown'
+        return bundle_type
+
+    def __get_item_rec(self, c_item, name, _file=None):
+        """
+        Get the c_item in _file or all the strings in the c_item.
+
+        This recursive method serves to either get all the formatted
+        strings that make the config (c_item). If '_file' is not None,
+        then you get a tuple containing the string representing the path
+        in the metadata and the value of the metadata at that path.
+        This is a generator function.
+
+        :param c_item: config item.
+        :param name: name representing the path on the metadata
+        :param _file: the object to extract contents from. Defaults to None.
+        :return: name or name, item
+        """
+        if isinstance(c_item, dict):
+            # Iterate over the contents of the dictionary
+            for key, value in c_item.items():
+                # Create the new name
+                new_name = "{}|{}".format(name, key) if name != "" else key
+                for item in value:
+                    # Recursive call on each level
+                    if _file is None or key in _file:
+                        child = None if _file is None else _file[key]
+                        yield from self.__get_item_rec(item, new_name, _file=child)
+        else:
+            # Return name concatenated with config key
+            name = "{}|{}".format(name, c_item).replace(".", ",")
+            if _file is not None and c_item in _file:
+                # If the file exists and contains the item in question
+                yield name, _file[c_item]
+            elif _file is None:
+                # If we only want the string of the name
+                yield name
