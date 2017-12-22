@@ -614,7 +614,8 @@ class DonorIndexer(Indexer):
         # Add empty fields as the string 'None'
         empty = {field: "None" for field in all_fields - present_keys}
         # Merge the four dictionaries
-        all_data = {**file_data, **extra_fields, **computed_fields, **empty}
+        #all_data = {**file_data, **extra_fields, **computed_fields, **empty}
+        all_data = {**file_data, **computed_fields}
         return all_data
 
     def create_mapping(self, **kwargs):
