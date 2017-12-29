@@ -19,7 +19,7 @@ import logging
 import os
 
 # Set up the chalice application
-app = Chalice(app_name=os.getenv('INDEXER_NAME', 'dss-indigo'))
+app = Chalice(app_name=os.getenv('INDEXER_NAME', 'dss-blau-dev'))
 app.debug = True
 app.log.setLevel(logging.DEBUG)
 # Set env on lambda, chalice config and profile
