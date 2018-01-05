@@ -29,12 +29,11 @@ aws configure
 
 ### Chalice
 
-Chalice is similar to Flask but is serverless and uses AWS Lambda.
+Chalice is similar to Flask but is serverless and uses AWS Lambda. If starting out fresh and a new AWS Lambda needs to be created execute
 ```
-pip install chalice
 chalice new-project
 ```
-When prompted for project name, input `<your-indexer-lambda-application-name>`, (e.g., dss-indigo).
+When prompted for project name, input `<your-indexer-lambda-application-name>`, (e.g., dss-indigo). If a chalice project exists already just skip that last line and keep reading.
 
 Change the working directory to the newly created folder `<your-indexer-lambda-application-name>` (e.g., dss-indigo) and execute `chalice deploy`. Record the URL returned in the last line of stdout returned by this command - henceforth referred to as `<callback_url>`. This will create an AWS Lambda function called `dss-indigo` which will be updated using `chalice deploy`. Chalice automatically generated a folder `chalicelib/` and the files `rm app.py` and `rm requirements.txt`. Overwrite those by copying `app.py`, `requirements.txt` and `chalicelib/` from this repo and to the dss-indigo folder. Then execute
 
