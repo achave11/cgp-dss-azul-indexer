@@ -4,10 +4,10 @@
     {
       "Effect": "Allow",
       "Principal": {
-        "AWS": "arn:aws:iam::<AWS-account-ID>:root"
+        "AWS": "arn:aws:iam::719818754276:root"
       },
       "Action": "es:*",
-      "Resource": "arn:aws:es:us-west-2:<AWS-account-ID>:domain/<your-es-domain-name>/*"
+      "Resource": "arn:aws:es:us-west-2:719818754276:domain/dss-blau-elasticsearch/*"
     },
     {
       "Effect": "Allow",
@@ -16,13 +16,14 @@
       },
       "Action": "es:*",
       "Resource": [
-        "arn:aws:es:us-west-2:<AWS-account-ID>:domain/<your-es-domain-name>/*",
-        "arn:aws:lambda:us-west-2:<AWS-account-ID>:function:<your-indexer-lambda-domain-name>/*"
+        "arn:aws:es:us-west-2:719818754276:domain/dss-blau-elasticsearch/*",
+        "arn:aws:lambda:us-west-2:719818754276:function:dss-blau-dev/*"
       ],
       "Condition": {
         "IpAddress": {
           "aws:SourceIp": [
-            "<your-ip-address>"
+            "73.92.146.41",
+            "128.114.59.219"
           ]
         }
       }
