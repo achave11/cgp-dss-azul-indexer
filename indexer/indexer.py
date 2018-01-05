@@ -553,6 +553,9 @@ class DonorIndexer(Indexer):
         :param bundle_version: The bundle of the version.
         """
 
+        # first check whether donor of the bundle data is already in ES
+        # if not, create it, otherwise append to it
+
         # Get the config driving indexing (e.g. the required entries)
         contents = self.__get_item(self.metadata_files)
         # Get the special fields added to the contents
@@ -568,10 +571,17 @@ class DonorIndexer(Indexer):
 
     def __get_item(self, D):
         """
-        "c" in c_item stands for configuration item.
-        "name" is essentially the key in the future index.
+        :D: metadata files as dict
         """
         contents = {}
+
+        donor_info = metadata_files['sample.json']['samples'][1]['content']
+
+        contents['name'] = donor_info['name']
+        contents['genus_species'] = donor_info['genus_species']
+        contents['ncbi_taxon'] = donor_info['ncbi_taxon']
+        contents['sample_IDs'] = donor_info['name']
+
 
         contents['age'] = D['sample.json']['donor']['age']
         contents['age_unit'] =D['sample.json']['donor']['age_unit']

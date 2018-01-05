@@ -12,7 +12,8 @@ from aws_requests_auth import boto_utils
 from aws_requests_auth.aws_auth import AWSRequestsAuth
 from chalice import Chalice
 from elasticsearch import Elasticsearch, RequestsHttpConnection
-from chalicelib.indexer import FileIndexer, AssayOrientedIndexer as AssayIndexer
+from chalicelib.indexer import FileIndexer
+from chalicelib.indexer import AssayOrientedIndexer as AssayIndexer
 from chalicelib.utils import DataExtractor
 import json
 import logging
