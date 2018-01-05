@@ -17,9 +17,9 @@ To find your `<AWS-account-ID>`, click "Select a Template" and click "Allow or d
 Take note of the Elasticsearch endpoint.
 
 ### Configure AWS and create a Virtual Environment
-Install python3.
+Install Python 3.6 (required by Chalice)
 
-Create a virtual environment with `virtualenv -p python3 <envname>` and activate with `source <envname>/bin/activate`.
+Create a virtual environment with `virtualenv --python=python3.6 <envname>` and activate with `source <envname>/bin/activate`.
 
 Install and configure the AWS CLI with your credentials
 ```
