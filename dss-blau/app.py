@@ -14,7 +14,7 @@ from chalice import Chalice
 from elasticsearch import Elasticsearch, RequestsHttpConnection
 from chalicelib.indexer import FileIndexer
 from chalicelib.indexer import AssayOrientedIndexer as AssayIndexer
-#from chalicelib.indexer import DonorIndexer
+from chalicelib.indexer import DonorIndexer
 from chalicelib.utils import DataExtractor
 import json
 import logging
@@ -88,7 +88,7 @@ def post_notification():
     file_indexer = FileIndexer(metadata_files,
                                data_files,
                                es,
-                               '{}_file_v4'.format(es_index),
+                               '{}_file_index_v4'.format(es_index),
                                es_doc_type,
                                index_settings=es_settings,
                                index_mapping_config=index_mapping_config)
@@ -99,16 +99,16 @@ def post_notification():
                                  "doc",
                                  index_settings=es_settings,
                                  index_mapping_config=index_mapping_config)
-    # donor_indexer = DonorIndexer(metadata_files,
-    #                              data_files,
-    #                              es,
-    #                              "{}_donor_index_v4".format(es_index),
-    #                              "doc",
-    #                              index_settings=es_settings,
-    #                              index_mapping_config=index_mapping_config)
+    donor_indexer = DonorIndexer(metadata_files,
+                                 data_files,
+                                 es,
+                                 "{}_donor_index_v4".format(es_index),
+                                 "doc",
+                                 index_settings=es_settings,
+                                 index_mapping_config=index_mapping_config)
     file_indexer.index(bundle_uuid, bundle_version)
     assay_indexer.index(bundle_uuid, bundle_version)
-#    donor_indexer.index(bundle_uuid, bundle_version)
+    donor_indexer.index(bundle_uuid, bundle_version)
     return {"status": "done"}
 
 

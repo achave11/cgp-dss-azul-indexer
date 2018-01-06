@@ -578,7 +578,6 @@ class DonorIndexer(Indexer):
 
         contents['name'] = donor_info['name']
         contents['genus_species'] = donor_info['genus_species']
-        contents['ncbi_taxon'] = donor_info['ncbi_taxon']
         contents['sample_IDs'] = donor_info['name']
 
         return contents
