@@ -542,7 +542,7 @@ class AssayOrientedIndexer(Indexer):
 
 
 class DonorIndexer(Indexer):
-    """Create donor-oriented index
+    """Donor-oriented index
     """
 
     def index(self, bundle_uuid, bundle_version, **kwargs):
@@ -552,6 +552,9 @@ class DonorIndexer(Indexer):
         :param bundle_uuid: The bundle_uuid of the bundle that will be indexed.
         :param bundle_version: The bundle of the version.
         """
+
+        # first check whether donor of the bundle data is already in ES
+        # if not, create it, otherwise append to it
 
         # Get the config driving indexing (e.g. the required entries)
         contents = self.__get_item(self.metadata_files)
@@ -568,20 +571,16 @@ class DonorIndexer(Indexer):
 
     def __get_item(self, D):
         """
-        "c" in c_item stands for configuration item.
-        "name" is essentially the key in the future index.
+        :D: metadata files as dict
         """
         contents = {}
+        donor_info = D['sample.json']['samples'][1]['content']
 
-        contents['age'] = D['sample.json']['donor']['age']
-        contents['age_unit'] =D['sample.json']['donor']['age_unit']
-        contents['body_mass_index'] = D['sample.json']['donor']['body_mass_index']
-        contents['disease'] = {'text': D['sample.json']['donor']['disease']['text']}
-        contents['id'] = D['sample.json']['donor']['id']
-        contents['life_stage'] = D['sample.json']['donor']['life_stage']
-        contents['ncbi_taxon'] = D['sample.json']['donor']['ncbi_taxon']
-        contents['sex'] = D['sample.json']['donor']['sex']
-        contents['species'] = D['sample.json']['donor']['species']
+        contents['name'] = donor_info['name']
+        contents['genus_species'] = donor_info['genus_species']
+        contents['ncbi_taxon'] = donor_info['ncbi_taxon']
+        contents['sample_IDs'] = donor_info['name']
+
         return contents
 
     def special_fields(self, data_file, present_fields, **kwargs):
@@ -613,8 +612,7 @@ class DonorIndexer(Indexer):
         present_keys = set(present_fields.keys())
         # Add empty fields as the string 'None'
         empty = {field: "None" for field in all_fields - present_keys}
-        # Merge the four dictionaries
-        #all_data = {**file_data, **extra_fields, **computed_fields, **empty}
+        # Merge the two dictionaries
         all_data = {**file_data, **computed_fields}
         return all_data
 
