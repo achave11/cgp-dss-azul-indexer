@@ -15,11 +15,16 @@ parser = argparse.ArgumentParser(description='Process options the finder of gold
 parser.add_argument('--dss-url', dest='dss_url', action='store',
                     default='https://dss.staging.data.humancellatlas.org/v1/search?replica=aws',
                     help='The url for the storage system.')
+# parser.add_argument('--indexer-url', dest='repoCode', action='store',
+#                     default='https://9b92wjnlgh.execute-api.us-west-2.amazonaws.com/dev/',
+#                     help='The indexer URL')
+
+# API Gateway for dss-blau
 parser.add_argument('--indexer-url', dest='repoCode', action='store',
-                    default='https://9b92wjnlgh.execute-api.us-west-2.amazonaws.com/dev/',
+                    default='https://1hkr6s0hsf.execute-api.us-west-2.amazonaws.com/api/',
                     help='The indexer URL')
 
-# Get the arguments into args
+# Get the arguments into args (a Namespace)
 args = parser.parse_args()
 
 # headers = {}
