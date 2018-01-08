@@ -94,7 +94,7 @@ class Indexer(object):
         Merge the document with the contents in ElasticSearch.
 
         merge() should take the results of get_item() and harmonize it
-        with whatever is present in ElasticSearch to avoid blind overwritting
+        with whatever is present in ElasticSearch to avoid blind overwriting
         of documents. Users should implement their own protocol.
 
         :param doc_contents: Current document to be indexed.
@@ -200,7 +200,7 @@ class FileIndexer(Indexer):
         Merge the document with the contents in ElasticSearch.
 
         merge() should take the results of get_item() and harmonize it
-        with whatever is present in ElasticSearch to avoid blind overwritting
+        with whatever is present in ElasticSearch to avoid blind overwriting
         of documents. Users should implement their own protocol.
 
         :param doc_contents: Current document to be indexed.
@@ -578,7 +578,6 @@ class DonorIndexer(Indexer):
 
         contents['name'] = donor_info['name']
         contents['genus_species'] = donor_info['genus_species']
-        contents['ncbi_taxon'] = donor_info['ncbi_taxon']
         contents['sample_IDs'] = donor_info['name']
 
         return contents
@@ -596,12 +595,12 @@ class DonorIndexer(Indexer):
         :return: a dictionary of all the special fields to be added.
         """
         # Get all the fields from a single file into a dictionary
-        file_data = {'file_{}'.format(key): value
+        donor_data = {'file_{}'.format(key): value
                      for key, value in data_file.items()}
         # Add extra field that should go in here (e.g. es_uuid, bundle_uuid)
         extra_fields = {key: value for key, value in kwargs.items()}
         # Get the file format
-        file_format = self.__get_format(file_data['file_name'])
+        file_format = self.__get_format(donor_data['file_name'])
         # Create a dictionary with the file fomrat and the bundle type
         computed_fields = {"file_format": file_format,
                            "bundle_type": self.__get_bundle_type(file_format)}
@@ -613,7 +612,7 @@ class DonorIndexer(Indexer):
         # Add empty fields as the string 'None'
         empty = {field: "None" for field in all_fields - present_keys}
         # Merge the two dictionaries
-        all_data = {**file_data, **computed_fields}
+        all_data = {**donor_data, **computed_fields}
         return all_data
 
     def create_mapping(self, **kwargs):
