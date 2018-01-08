@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "app_name": "dss-blau",
+  "stages": {
+    "dev": {
+      "api_gateway_stage": "api",
+      "manage_iam_role":false,
+      "iam_role_arn":"arn:aws:iam::719818754276:role/dss-blau-dev",
+      "environment_variables": {
+         "ES_ENDPOINT":"search-dss-blau-elasticsearch-hoa57jk4j4anqyueey2mhtsuca.us-west-2.es.amazonaws.com",
+         "BLUE_BOX_ENDPOINT":"dss.staging.data.humancellatlas.org/v1",
+         "ES_INDEX":"blau-indexer",
+         "INDEXER_NAME":"dss-blau",
+	 "HOME":"/tmp"
+      }
+    }
+  }
+}
