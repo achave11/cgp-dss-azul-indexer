@@ -1,8 +1,6 @@
 .idea
 .ipynb_checkpoints
-dss-indigo
 indexer/__pycache__
-venv
 dss-blau/__pycache__/app.cpython-36.pyc
 dss-blau/chalicelib/__pycache__/indexer.cpython-36.pyc
 dss-blau/chalicelib/__pycache__/__init__.cpython-36.pyc
