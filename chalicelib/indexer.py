@@ -182,6 +182,8 @@ class FileIndexer(Indexer):
             args = [req_entries, "", self.metadata_files]
             # Get all the contents from the entries requested in the config
             contents = {key: value for key, value in self.__get_item(*args)}
+            import pdb
+            pdb.set_trace()
             # Get the elasticsearch uuid for this particular data file
             es_uuid = "{}:{}".format(bundle_uuid, _file['uuid'])
             # Get the special fields added to the contents

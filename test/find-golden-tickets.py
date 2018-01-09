@@ -13,8 +13,12 @@ parser = argparse.ArgumentParser(description='Process options the finder of gold
 #                    default='Q3_DEMO-assay1', help='assay id')
 parser.add_argument('--dss-url', dest='dss_url', action='store',
                     default='https://dss.staging.data.humancellatlas.org/v1/search?replica=aws', help='The url for the storage system.')
+# parser.add_argument('--indexer-url', dest='repoCode', action='store',
+#                    default='https://9b92wjnlgh.execute-api.us-west-2.amazonaws.com/dev/', help='The indexer URL')
+# API Gateway for dss-blau
 parser.add_argument('--indexer-url', dest='repoCode', action='store',
-                    default='https://9b92wjnlgh.execute-api.us-west-2.amazonaws.com/dev/', help='The indexer URL')
+                    default='https://1hkr6s0hsf.execute-api.us-west-2.amazonaws.com/api/',
+                    help='The indexer URL')
 
 #Get the arguments into args
 args = parser.parse_args()
@@ -45,7 +49,7 @@ def parseResultEntry(result_entry):
     '''
     Helper function to parse the results from a single results entry
     '''
-    bundle_id = result_entry['bundle_id']
+    bundle_id = result_entry['bundle_fqid']
     bundle_uuid = bundle_id[:36]
     bundle_version = bundle_id[37:]
     return (bundle_uuid, bundle_version)
@@ -64,24 +68,29 @@ def main():
     headers = {"content-type": "application/json"}
     # post_result = postToIndexer(bundle_list, args.repoCode, headers)
     threads = []
-    for bundle, version in bundle_list:
+    k = 0
+    max_docs = 3  # number of documents posted from primary index
+    #for bundle, version in bundle_list:
+    while k < max_docs:
+        bundle = bundle_list[k][0]
+        version = bundle_list[k][1]
         data = json.dumps({ "query": { "query": { "match_all":{}} }, "subscription_id": "ba50df7b-5a97-4e87-b9ce-c0935a817f0b", "transaction_id": "ff6b7fa3-dc79-4a79-a313-296801de76b9", "match": { "bundle_version": version, "bundle_uuid": bundle } })
         req = requestConstructor(args.repoCode, headers, data)
         threads.append(threading.Thread(target=executeRequest, args=(req,)))
-
         print("Bundle: {}, Version: {}".format(bundle, version))
         try:
             response = executeRequest(req)
         except Exception as e:
             print (e)
-    print("Total of {} bundles".format(len(bundle_list)))
-    start = time.time()
+        k = k + 1
+    # print("Total of {} bundles".format(len(bundle_list)))
+    print("Total of {} bundles".format(max_docs))
+#    start = time.time()x
 #    for thread in threads:
 #        thread.start()
 #    for thread in threads:
 #        thread.join()
 #    print "Elapsed Time: %s" % (time.time() - start)
-
 
 if __name__ == "__main__":
     main()

@@ -86,7 +86,7 @@ def post_notification():
     file_indexer = FileIndexer(metadata_files,
                                data_files,
                                es,
-                               '{}_file_v4'.format(es_index),
+                               '{}_file2_index_v4'.format(es_index),
                                es_doc_type,
                                index_settings=es_settings,
                                index_mapping_config=index_mapping_config)
