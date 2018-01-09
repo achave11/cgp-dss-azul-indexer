@@ -279,13 +279,6 @@ class FileIndexer(Indexer):
                     if _file is None or key in _file:
                         child = None if _file is None else _file[key]
                         yield from self.__get_item(item, new_name, _file=child)
-        elif isinstance(c_item, list):
-            for elem in L:
-                if isinstance(elem, dict):
-                    if 'submitter' in elem:
-                        if 'name' in next(iter(elem.values())):
-                            name = "{}|{}".format(name, 'name')
-                            yield name
         else:
             # Return name concatenated with config key
             name = "{}|{}".format(name, c_item).replace(".", ",")
