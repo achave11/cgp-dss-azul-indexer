@@ -181,21 +181,8 @@ class FileIndexer(Indexer):
             # List the arguments for clarity
             args = [req_entries, "", self.metadata_files]
             # Get all the contents from the entries requested in the config
-            contents = {}
-            for key, value in get_item(*args):
-                if isinstance(value, list):
-                    for elem in value:
-                        if isinstance(item, dict):
-                            if (('submitters' in key or 'contributors' in key)
-                               and ('name' in item.keys())):
-                                value = item['name']
-                                key = key + "|name"
-                                contents[key] = value
-                            else:
-                                contents[key] = value
-                else:
-                    contents[key] = value
-
+            contents = {key: value for key, value in self.__get_item(*args)}
+            contents = self.__append_to_contents(contents)
             # Get the elasticsearch uuid for this particular data file
             es_uuid = "{}:{}".format(bundle_uuid, _file['uuid'])
             # Get the special fields added to the contents
@@ -308,6 +295,26 @@ class FileIndexer(Indexer):
             elif _file is None:
                 # If we only want the string of the name
                 yield name
+
+    def __append_to_contents(self, d):
+        """
+        HACK: identifies keys containing strings "submitter" and
+        "contributors" in dictionary d, whose values are lists,
+        and creates a new key containing the name value in of
+        each list element.
+        """
+        newd = {}
+        for key, val in d.items():
+            if isinstance(val, list):
+                for elem in val:
+                    if isinstance(elem, dict):
+                        if (('submitters' in key or 'contributors' in key)
+                           and ('name' in elem.keys())):
+                            val = elem['name']
+                            newkey = key + "|name"
+                            newd[newkey] = val
+        newcontent = {**d, **newd}
+        return newcontent
 
     def __get_format(self, file_name):
         """

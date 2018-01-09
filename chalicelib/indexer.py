@@ -94,7 +94,7 @@ class Indexer(object):
         Merge the document with the contents in ElasticSearch.
 
         merge() should take the results of get_item() and harmonize it
-        with whatever is present in ElasticSearch to avoid blind overwritting
+        with whatever is present in ElasticSearch to avoid blind overwriting
         of documents. Users should implement their own protocol.
 
         :param doc_contents: Current document to be indexed.
@@ -171,7 +171,7 @@ class FileIndexer(Indexer):
 
         Triggers the actual indexing process
 
-        :param bundle_uuid: The bundle_uuid of the bundle that will be indexed.
+        :param bndle_uuid: The bundle_uuid of the bundle that will be indexed.
         :param bundle_version: The bundle of the version.
         """
         # Get the config driving indexing (e.g. the required entries)
@@ -182,8 +182,7 @@ class FileIndexer(Indexer):
             args = [req_entries, "", self.metadata_files]
             # Get all the contents from the entries requested in the config
             contents = {key: value for key, value in self.__get_item(*args)}
-            import pdb
-            pdb.set_trace()
+            contents = self.__append_to_contents(contents)
             # Get the elasticsearch uuid for this particular data file
             es_uuid = "{}:{}".format(bundle_uuid, _file['uuid'])
             # Get the special fields added to the contents
@@ -202,7 +201,7 @@ class FileIndexer(Indexer):
         Merge the document with the contents in ElasticSearch.
 
         merge() should take the results of get_item() and harmonize it
-        with whatever is present in ElasticSearch to avoid blind overwritting
+        with whatever is present in ElasticSearch to avoid blind overwriting
         of documents. Users should implement their own protocol.
 
         :param doc_contents: Current document to be indexed.
@@ -280,6 +279,13 @@ class FileIndexer(Indexer):
                     if _file is None or key in _file:
                         child = None if _file is None else _file[key]
                         yield from self.__get_item(item, new_name, _file=child)
+        elif isinstance(c_item, list):
+            for elem in L:
+                if isinstance(elem, dict):
+                    if 'submitter' in elem:
+                        if 'name' in next(iter(elem.values())):
+                            name = "{}|{}".format(name, 'name')
+                            yield name
         else:
             # Return name concatenated with config key
             name = "{}|{}".format(name, c_item).replace(".", ",")
@@ -289,6 +295,26 @@ class FileIndexer(Indexer):
             elif _file is None:
                 # If we only want the string of the name
                 yield name
+
+    def __append_to_contents(self, d):
+        """
+        HACK: identifies keys containing strings "submitter" and
+        "contributors" in dictionary d, whose values are lists,
+        and creates a new key containing the name value in of
+        each list element.
+        """
+        newd = {}
+        for key, val in d.items():
+            if isinstance(val, list):
+                for elem in val:
+                    if isinstance(elem, dict):
+                        if (('submitters' in key or 'contributors' in key)
+                           and ('name' in elem.keys())):
+                            val = elem['name']
+                            newkey = key + "|name"
+                            newd[newkey] = val
+        newcontent = {**d, **newd}
+        return newcontent
 
     def __get_format(self, file_name):
         """
@@ -544,14 +570,158 @@ class AssayOrientedIndexer(Indexer):
 
 
 class DonorIndexer(Indexer):
-    """index method calls:.
-
-    - special_fields
-    - merge
-    - load_mapping
-        - create_mapping
-    - load_doc
-
+    """Donor-oriented index
     """
 
-    pass
+    def index(self, bundle_uuid, bundle_version, **kwargs):
+        """Indexes the data files.
+
+        Triggers the actual indexing process
+        :param bundle_uuid: The bundle_uuid of the bundle that will be indexed.
+        :param bundle_version: The bundle of the version.
+        """
+
+        # NOTE:
+        # v4.6.1 schema version does not have a donor UUID. In that case it is
+        # impossible to check whether another "samples" bundle contains data
+        # from a given donor. Unless a donor UUID exists no merge method
+        # can be applied to the donor indexer.
+
+        # Get the config driving indexing (e.g. the required entries)
+        contents = self.__get_item(self.metadata_files)
+        # Get the special fields added to the contents
+        for _file in self.data_files.values():
+            es_uuid = "{}:{}".format(bundle_uuid, _file['uuid'])
+            special_ = self.special_fields(_file,
+                                           contents,
+                                           bundle_uuid=bundle_uuid,
+                                           bundle_version=bundle_version,
+                                           es_uuid=es_uuid)
+            contents = {**contents, **special_}
+            self.load_doc(doc_contents=contents, doc_uuid=es_uuid)
+
+    def __get_item(self, D):
+        """
+        :D: metadata files as dict
+        """
+        contents = {}
+        donor_info = D['sample.json']['samples'][1]['content']
+
+        contents['name'] = donor_info['name']
+        contents['genus_species'] = donor_info['genus_species']
+        contents['sample_IDs'] = donor_info['name']
+
+        return contents
+
+    def special_fields(self, data_file, present_fields, **kwargs):
+        """
+        Add any special fields that may be missing.
+
+        Gets any special field that may not be available directly from the
+        metadata.
+
+        :param data_file: a dictionary describing the file in question.
+        :param present_fields: dictionary with available fields.
+        :param kwargs: any additional entries you want to include.
+        :return: a dictionary of all the special fields to be added.
+        """
+        # Get all the fields from a single file into a dictionary
+        donor_data = {'file_{}'.format(key): value
+                     for key, value in data_file.items()}
+        # Add extra field that should go in here (e.g. es_uuid, bundle_uuid)
+        extra_fields = {key: value for key, value in kwargs.items()}
+        # Get the file format
+        file_format = self.__get_format(donor_data['file_name'])
+        # Create a dictionary with the file fomrat and the bundle type
+        computed_fields = {"file_format": file_format,
+                           "bundle_type": self.__get_bundle_type(file_format)}
+        # Get all the requested entries that should go in ElasticSearch
+        req_entries = self.index_mapping_config['requested_entries']
+        all_fields = {entry for entry in self.__get_item_rec(req_entries, "")}
+        # Make a set out of the fields present in the data
+        present_keys = set(present_fields.keys())
+        # Add empty fields as the string 'None'
+        empty = {field: "None" for field in all_fields - present_keys}
+        # Merge the two dictionaries
+        all_data = {**donor_data, **computed_fields}
+        return all_data
+
+    def create_mapping(self, **kwargs):
+        """
+        Return the mapping as a string.
+
+        Pulls the mapping from the index_mapping_config.
+        """
+        # Return the es_mapping from the index_mapping_config
+        mapping_config = self.index_mapping_config['es_mapping']
+        return json.dumps(mapping_config)
+
+    def __get_format(self, file_name):
+        """
+        HACK This is to get the file format while we get a file format.
+
+        We need to get the file format from the Blue Box team somehow.
+        This is a small parsing hack while we get a response.
+
+        :param file_name: A string containing the the file name with extension
+        """
+        # Get everything after the period
+        file_format = '.'.join(file_name.split('.')[1:])
+        file_format = file_format if file_format != '' else 'Unknown'
+        return file_format
+
+    def __get_bundle_type(self, file_extension):
+        """
+        HACK This is to get the bundle type while we wait for Blue Box team.
+
+        We need to get the bundle type from the Blue Box team somehow.
+        This is a small parsing hack while we get a response from them.
+
+        :param file_name: A string containing the the file extension
+        """
+        # A series of if else statements to figure out the bundle type
+        # HACK
+        if 'analysis.json' in self.metadata_files:
+            bundle_type = 'Analysis'
+        elif re.search(r'(tiff)', str(file_extension)):
+            bundle_type = 'Imaging'
+        elif re.search(r'(fastq.gz)', str(file_extension)):
+            bundle_type = 'scRNA-Seq Upload'
+        else:
+            bundle_type = 'Unknown'
+        return bundle_type
+
+    def __get_item_rec(self, c_item, name, _file=None):
+        """
+        Get the c_item in _file or all the strings in the c_item.
+
+        This recursive method serves to either get all the formatted
+        strings that make the config (c_item). If '_file' is not None,
+        then you get a tuple containing the string representing the path
+        in the metadata and the value of the metadata at that path.
+        This is a generator function.
+
+        :param c_item: config item.
+        :param name: name representing the path on the metadata
+        :param _file: the object to extract contents from. Defaults to None.
+        :return: name or name, item
+        """
+        if isinstance(c_item, dict):
+            # Iterate over the contents of the dictionary
+            for key, value in c_item.items():
+                # Create the new name
+                new_name = "{}|{}".format(name, key) if name != "" else key
+                for item in value:
+                    # Recursive call on each level
+                    if _file is None or key in _file:
+                        child = None if _file is None else _file[key]
+                        yield from self.__get_item_rec(item, new_name, _file=child)
+        else:
+            # Return name concatenated with config key
+            name = "{}|{}".format(name, c_item).replace(".", ",")
+            if _file is not None and c_item in _file:
+                # If the file exists and contains the item in question
+                yield name, _file[c_item]
+            elif _file is None:
+                # If we only want the string of the name
+                yield name
