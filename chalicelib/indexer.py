@@ -10,6 +10,8 @@ in this module.
 from functools import reduce
 import json
 import re
+from collections import defaultdict
+import copy  # enables deep copy of dicts
 
 
 class Indexer(object):
@@ -182,6 +184,8 @@ class FileIndexer(Indexer):
             args = [req_entries, "", self.metadata_files]
             # Get all the contents from the entries requested in the config
             contents = {key: value for key, value in self.__get_item(*args)}
+            # remove key that contains pattern 'paired_ends'
+            contents = self.__rm_item_from_dict(contents, 'paired_ends')
             contents = self.__append_to_contents(contents)
             # Get the elasticsearch uuid for this particular data file
             es_uuid = "{}:{}".format(bundle_uuid, _file['uuid'])
@@ -297,23 +301,27 @@ class FileIndexer(Indexer):
         each list element and thus flattens the lists. Output
         is the flattened list appened to the original list.
         """
-        newd = {}
+        newd = defaultdict(list)
         for key, val in d.items():
             if isinstance(val, list):
                 for elem in val:
                     if isinstance(elem, dict):
                         if (('submitters' in key or 'contributors' in key)
                            and ('name' in elem.keys())):
-                            newkey = key + "|name"
-                            newd[newkey] = elem['name']
-                        elif 'content' in elem.keys():
-                            for item in self.__dict_generator(elem, pre=None):
-                                if ('specimen_from_organism' in item and 'body_part' in item):
-                                    newkey = (key + "|speciment_from_organism|body_part")
-                                    newd[newkey] = item[-1]  # last elem is value
-                                elif ('specimen_from_organism' in item and 'organ' in item):
-                                    newkey = (key + "|speciment_from_organism|organ")
-                                    newd[newkey] = item[-1]
+                            newkey = "{}|{}".format(key, "name")
+                            newd[newkey].append(elem['name'])  # add new value
+                        # elif 'content' in elem.keys():
+                        #     s1 = 'specimen_from_organism'
+                        #     s2 = 'body_part'
+                        #     s3 = 'organ'
+                        #     for item in self.__dict_generator(elem, pre=None):
+                        #         if (s1 in item and s2 in item):
+                        #             newkey = "{}|{}|{}".format(key, s1, s2)
+                        #             # last elem is the value
+                        #             newd[newkey].append(item[-1])
+                        #         elif (s1 in item and s3 in item):
+                        #             newkey = "{}|{}|{}".format(key, s1, s3)
+                        #             newd[newkey].append(item[-1])
         newcontent = {**d, **newd}
         return newcontent
 
@@ -339,16 +347,20 @@ class FileIndexer(Indexer):
         else:
             yield indict
 
-    def __rm_item_from_dict(self, d, key, s):
+    def __rm_item_from_dict(self, d, s):
         """
-        HACK: Takes dict d, which can contain key "key", searches for a
-        pattern that contains string "s" and, if found, removes that
+        HACK: Take dict d and search for key pattern that
+        contains string "s" and, if found, removes that
         key and value. Silent method.
         """
+        # Remove from copy so d remains intact during interation.
+        out_dict = copy.deepcopy(d)
         pattern = '(^|.)' + s + '(.|$)'
-        p = re.compile(pattern)
-        if bool(p.search(key)):
-            d.pop(key, None)
+        regex = re.compile(pattern)
+        for key in d.keys():
+            if bool(regex.search(str(key))):
+                out_dict.pop(key, None)
+        return out_dict
 
     def __get_format(self, file_name):
         """

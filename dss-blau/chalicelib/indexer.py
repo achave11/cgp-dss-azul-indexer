@@ -11,6 +11,7 @@ from functools import reduce
 import json
 import re
 from collections import defaultdict
+import copy  # enables deep copy of dicts
 
 
 class Indexer(object):
@@ -183,6 +184,8 @@ class FileIndexer(Indexer):
             args = [req_entries, "", self.metadata_files]
             # Get all the contents from the entries requested in the config
             contents = {key: value for key, value in self.__get_item(*args)}
+            # remove key that contains pattern 'paired_ends'
+            contents = self.__rm_item_from_dict(contents, 'paired_ends')
             contents = self.__append_to_contents(contents)
             # Get the elasticsearch uuid for this particular data file
             es_uuid = "{}:{}".format(bundle_uuid, _file['uuid'])
@@ -344,16 +347,20 @@ class FileIndexer(Indexer):
         else:
             yield indict
 
-    def __rm_item_from_dict(self, d, key, s):
+    def __rm_item_from_dict(self, d, s):
         """
-        HACK: Takes dict d, which can contain key "key", searches for a
-        pattern that contains string "s" and, if found, removes that
+        HACK: Take dict d and search for key pattern that
+        contains string "s" and, if found, removes that
         key and value. Silent method.
         """
+        # Remove from copy so d remains intact during interation.
+        out_dict = copy.deepcopy(d)
         pattern = '(^|.)' + s + '(.|$)'
-        p = re.compile(pattern)
-        if bool(p.search(key)):
-            d.pop(key, None)
+        regex = re.compile(pattern)
+        for key in d.keys():
+            if bool(regex.search(str(key))):
+                out_dict.pop(key, None)
+        return out_dict
 
     def __get_format(self, file_name):
         """
