@@ -87,14 +87,14 @@ def post_notification():
     file_indexer = FileIndexer(metadata_files,
                                data_files,
                                es,
-                               '{}_file_index_v4'.format(es_index),
+                               '{}_file_index_v3'.format(es_index),
                                es_doc_type,
                                index_settings=es_settings,
                                index_mapping_config=index_mapping_config)
     assay_indexer = AssayIndexer(metadata_files,
                                  data_files,
                                  es,
-                                 "{}_assay_index_v4".format(es_index),
+                                 "{}_assay_index_v3".format(es_index),
                                  "doc",
                                  index_settings=es_settings,
                                  index_mapping_config=index_mapping_config)
