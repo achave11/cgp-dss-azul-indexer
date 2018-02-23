@@ -119,6 +119,23 @@ class DataExtractor(object):
                                replica=replica)
         return _file
 
+    def __searchfor(self, pat, d):
+        """Searches for a (partial) string pat in
+        the values of dict d if the value is a string.
+        Returns a list L containing the keys in which such 
+        values were found.
+        :param pat: (str) partial or complete
+        :param d: (dict) should be data_files from extract_bundle
+        :return L: (list) of filenames in which pat was found
+        """
+        L = []
+        for key, i_val in d.items():
+            for j_val in i_val.values():
+                if isinstance(j_val, str):
+                    if pat in j_val:
+                        L.append(key)
+        return L
+
     def extract_bundle(self, request, replica):
         """
         Get the files and actual metadata.
@@ -137,6 +154,13 @@ class DataExtractor(object):
         bundle_uuid = request['match']['bundle_uuid']
         # Get the metadata and data descriptions
         metadata_files, data_files = self.__get_bundle(bundle_uuid, replica)
+        # Check content-type of each file in data_files. Those with have been
+        # loaded by reference need to be read...?
+        L = self.__searchfor('dcp-type=fileref', data_files)
+        if L:
+            # read file
+            pass
+
         # Create a ThreadPool which will execute the function
         pool = ThreadPool(len(metadata_files))
         # Pool the contents in the right format for the get_metadata function
