@@ -2,6 +2,9 @@
 .ipynb_checkpoints
 dss-indigo
 indexer/__pycache__
+dss-blau/__pycache__
+dss-blau/chalicelib/__pycache__
+dss-blau/.*
 venv
 *.pyc
 __pychache__/
