@@ -121,7 +121,7 @@ class DataExtractor(object):
 
     def __searchfor(self, pat, d):
         """Searches for a (partial) string pat in
-        the values of dict d if the value is a string.
+        the values of dict d, if that value is a string.
         Returns a list L containing the keys in which such 
         values were found.
         :param pat: (str) partial or complete
@@ -154,11 +154,11 @@ class DataExtractor(object):
         bundle_uuid = request['match']['bundle_uuid']
         # Get the metadata and data descriptions
         metadata_files, data_files = self.__get_bundle(bundle_uuid, replica)
-        # Check content-type of each file in data_files. Those with have been
+        # Check content-type of each file in data_files. Bundles that have been
         # loaded by reference need to be read...?
         L = self.__searchfor('dcp-type=fileref', data_files)
         if L:
-            # read file
+            # read file again using file_uuid or version_uuid
             pass
 
         # Create a ThreadPool which will execute the function
@@ -166,7 +166,7 @@ class DataExtractor(object):
         # Pool the contents in the right format for the get_metadata function
         args = [(name, (_f['uuid'], replica)) for name, _f in
                 metadata_files.items()]
-        results = pool.starmap(get_metadata, args)
+        results = pool.starmap(get_metadata, args)  # TODO: get_metadata args???
         pool.close()
         pool.join()
         # Reassign the metadata files as a single dictionary
