@@ -14,6 +14,7 @@ from hca.dss import DSSClient, SwaggerAPIException
 import logging
 from multiprocessing.dummy import Pool as ThreadPool
 import os
+import json
 
 
 indexer_name = os.getenv('INDEXER_NAME', 'dss-indigo')
@@ -99,7 +100,7 @@ class DataExtractor(object):
         # Return as a tuple
         return metadata_files, data_files
 
-    def __get_file(self, file_uuid, replica):
+    def __get_file(self, file_uuid, file_version, replica):
         """
         Get a file from the Blue Box.
 
@@ -108,6 +109,7 @@ class DataExtractor(object):
         times.
 
         :param file_uuid: Specifies which file to get
+        :param file_version: Version (i.e., timestamp) of that file
         :param replica: Specifies the replica to pull from
         :return: Contents of that file
         """
@@ -116,24 +118,27 @@ class DataExtractor(object):
                                self.dss_client.get_file,
                                SwaggerAPIException,
                                uuid=file_uuid,
+                               version=file_version,
                                replica=replica)
         return _file
 
     def __searchfor(self, pat, d):
         """Searches for a (partial) string pat in
-        the values of dict d, if that value is a string.
-        Returns a list L containing the keys in which such 
+        the values of dict d, if that value is a string. d is expected
+        to be a dictionary of dictionaries. The top-level keys
+        are data file names.
+        Returns a list L containing those top-level keys in which such 
         values were found.
+        
         :param pat: (str) partial or complete
         :param d: (dict) should be data_files from extract_bundle
         :return L: (list) of filenames in which pat was found
         """
-        L = []
+        L = []  # a list
         for key, i_val in d.items():
             for j_val in i_val.values():
-                if isinstance(j_val, str):
-                    if pat in j_val:
-                        L.append(key)
+                if isinstance(j_val, str) and pat in j_val:
+                    L.append(key)
         return L
 
     def extract_bundle(self, request, replica):
@@ -156,10 +161,17 @@ class DataExtractor(object):
         metadata_files, data_files = self.__get_bundle(bundle_uuid, replica)
         # Check content-type of each file in data_files. Bundles that have been
         # loaded by reference need to be read...?
-        L = self.__searchfor('dcp-type=fileref', data_files)
+
+        L = self.__searchfor('dss-type=fileref', data_files)
         if L:
             # read file again using file_uuid or version_uuid
-            pass
+            for fname in L:
+                uuid = data_files[fname]['uuid']
+                version = data_files[fname]['version']
+                file_content = self.__get_file(uuid, version, replica)
+                str_val = file_content.decode("utf-8")
+                dict_val = json.loads(str_val)
+                data_files[fname].update(dict_val)
 
         # Create a ThreadPool which will execute the function
         pool = ThreadPool(len(metadata_files))
