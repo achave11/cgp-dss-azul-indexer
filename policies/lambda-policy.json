@@ -21,7 +21,8 @@
       ],
       "Condition": {
         "IpAddress": {
-          "aws:SourceIp": "128.114.59.219"
+          "aws:SourceIp": ["128.114.59.219",
+			   "73.92.146.41"]
         }
       }
     }
