@@ -12,14 +12,15 @@ from aws_requests_auth import boto_utils
 from aws_requests_auth.aws_auth import AWSRequestsAuth
 from chalice import Chalice
 from elasticsearch import Elasticsearch, RequestsHttpConnection
-from chalicelib.indexer import FileIndexer, AssayOrientedIndexer as AssayIndexer
+from chalicelib.indexer import FileIndexer
+from chalicelib.indexer import AssayOrientedIndexer as AssayIndexer
 from chalicelib.utils import DataExtractor
 import json
 import logging
 import os
 
 # Set up the chalice application
-app = Chalice(app_name=os.getenv('INDEXER_NAME', 'dss-indigo'))
+app = Chalice(app_name=os.getenv('INDEXER_NAME', 'dss-blau-dev'))
 app.debug = True
 app.log.setLevel(logging.DEBUG)
 # Set env on lambda, chalice config and profile
@@ -86,14 +87,14 @@ def post_notification():
     file_indexer = FileIndexer(metadata_files,
                                data_files,
                                es,
-                               '{}_file2_index_v4'.format(es_index),
+                               '{}_file_index_v3'.format(es_index),
                                es_doc_type,
                                index_settings=es_settings,
                                index_mapping_config=index_mapping_config)
     assay_indexer = AssayIndexer(metadata_files,
                                  data_files,
                                  es,
-                                 "{}_assay_index_v4".format(es_index),
+                                 "{}_assay_index_v3".format(es_index),
                                  "doc",
                                  index_settings=es_settings,
                                  index_mapping_config=index_mapping_config)

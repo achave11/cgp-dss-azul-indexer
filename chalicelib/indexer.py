@@ -28,6 +28,7 @@ class Indexer(object):
     should ideally only overwrite index(), special_fields() and merge().
     index() should call special_fields() first and then merge(). Users
     can define their own extra functions to help with indexing as needed.
+
     """
 
     def __init__(self, metadata_files, data_files, es_client, index_name,
@@ -184,13 +185,6 @@ class FileIndexer(Indexer):
             # Get all the contents from the entries requested in the config
             contents = {key: value for key, value in self.__get_item(*args)}
             # remove key that contains pattern 'paired_ends'
-
-            # ADD HERE: check for the content-type. If it contains
-            # "dss-type=fileref" read (see "DataExtractor",
-            # a private method that shows the "contents") the file and parse the
-            # JSON to obtain a dictionary with the file values which
-            # to be updated wrt checksums, size, content-type, and all values.
-            
             contents = self.__rm_item_from_dict(contents, 'paired_ends')
             contents = self.__append_to_contents(contents)
             # Get the elasticsearch uuid for this particular data file
