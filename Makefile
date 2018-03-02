@@ -5,7 +5,7 @@ deploy:
 	@echo "configuring AWS with your credentials\n"
 	pip install awscli --upgrade && \
 	aws configure && \
-	chalice dss-blau && \
+	chalice new-project dss-blau && \
 	cp app.py dss-blau/app.py
 	cp -r chalicelib dss-blau/chalicelib
 	@echo "deploying lambda on AWS\n"
