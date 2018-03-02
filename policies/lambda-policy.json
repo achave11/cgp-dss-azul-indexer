@@ -1,25 +1,29 @@
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "logs:CreateLogGroup",
-                "logs:CreateLogStream",
-                "logs:PutLogEvents"
-            ],
-            "Resource": "arn:aws:logs:*:*:*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": [
-                "es:ESHttpDelete",
-                "es:ESHttpGet",
-                "es:ESHttpHead",
-                "es:ESHttpPut",
-                "es:ESHttpDelete"
-            ],
-            "Resource": "<your arn for your elasticsearch box>/*"
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "arn:aws:iam::719818754276:root"
+      },
+      "Action": "es:*",
+      "Resource": "arn:aws:es:us-west-2:719818754276:domain/dss-blau-elasticsearch/*"
+    },
+    {
+      "Effect": "Allow",
+      "Principal": {
+        "AWS": "*"
+      },
+      "Action": "es:*",
+      "Resource": [
+        "arn:aws:es:us-west-2:719818754276:domain/dss-blau-elasticsearch/*",
+        "arn:aws:lambda:us-west-2:719818754276:function:dss-blau/*"
+      ],
+      "Condition": {
+        "IpAddress": {
+          "aws:SourceIp": "128.114.59.219"
         }
-    ]
+      }
+    }
+  ]
 }
