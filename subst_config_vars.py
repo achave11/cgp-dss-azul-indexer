@@ -25,7 +25,7 @@ def subst_config_vars():
     config_params = dict(zip(config_keys, config_vars))
     with open(fname, 'r') as fp:
         config = json.load(fp)
-    config.update(config_params)
+    config['stages']['dev'].update(config_params)
     with open(fname, 'w') as fp:
         json.dump(config, fp)
 
