@@ -12,7 +12,6 @@ deploy:
 	@echo "update lambda configuration parameters"
 	python subst_config_vars.py
 	cp -r chalicelib dss-blau/chalicelib
-	cp -r ../dss-blau_copy_2018-03-02/.chalice dss-blau
 	@echo "deploying lambda on AWS\n"
 	cd dss-blau && \
 	chalice deploy --no-autogen-policy
