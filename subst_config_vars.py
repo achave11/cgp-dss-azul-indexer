@@ -21,7 +21,7 @@ def subst_config_vars(lambda_name):
     es_endpoint = os.environ["ES_ENDPOINT"]
     blue_box_endpoint = os.environ["BLUE_BOX_ENDPOINT"]
     es_index = os.environ["ES_INDEX"]
-    indexer_name = os.environ["INDEXER_NAME"]
+    indexer_name = lambda_name
     home = os.environ["HOME"]
     # Create dict from those.
     config_keys = ['ES_ENDPOINT', 'BLUE_BOX_ENDPOINT',

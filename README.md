@@ -17,15 +17,9 @@ To find your `<AWS-account-ID>`, click "Select a Template" and click "Allow or d
 Take note of the Elasticsearch endpoint.
 
 ### Configure AWS and create a Virtual Environment
-Install python3.
+Clone this repository and `cd dss-azul-indexer`. Run `ls -ls /usr/bin/python*` to check whether Python 3.6 is installed. If not install it. Next, create a virtual environment with `virtualenv --python=python3.6 <envname>` and activate with `source <envname>/bin/activate`.
 
-Create a virtual environment with `virtualenv -p python3 <envname>` and activate with `source <envname>/bin/activate`.
-
-Install and configure the AWS CLI with your credentials
-```
-pip install awscli --upgrade
-aws configure
-```
+Now run `make deploy`. This will ask for AWS credentials, and a name for the Lambda which handles the notifications.
 
 ### Chalice
 
