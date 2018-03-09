@@ -17,7 +17,7 @@ To find your `<AWS-account-ID>`, click "Select a Template" and click "Allow or d
 Take note of the Elasticsearch endpoint.
 
 ### Build the AWS Lambda to handle Blue Box notifications
-Clone this repository and `cd dss-azul-indexer`. Run `ls -ls /usr/bin/python*` to check whether Python 3.6 is installed. If not install it. Next, create a virtual environment with `virtualenv --python=python3.6 <envname>` and activate it with `source <envname>/bin/activate`. Use your favorite editor to update the values for the Blue Box and Elasticsearch endpoints in the file `.env`. Do _not_ add protocols (e.g., `http:///` to any of the Endpoints. Make sure the ES_ENDPOINT does not have any trailing slashes. Now run `make deploy`. This will ask for your AWS credentials, and a name for the AWS Lambda. It should finish by reporting the call-back URL of the newly created Lambda function, for instance `https://<someCode>.execute-api.us-west-2.amazonaws.com/api/`
+Clone this repository and `cd dss-azul-indexer`. Run `ls -ls /usr/bin/python*` to check whether Python 3.6 is installed. If not install it. Next, create a virtual environment with `virtualenv --python=python3.6 <envname>` and activate it with `source <envname>/bin/activate`. Use your favorite editor to update the values for the Blue Box and Elasticsearch endpoints in the file `.env`. Do _not_ add protocols (e.g., `http://`) to any of the Endpoints. Make sure the ES_ENDPOINT does not have any trailing slashes. Now run `make deploy`. This will ask for your AWS credentials, and a name for the AWS Lambda. It should finish by reporting the call-back URL of the newly created Lambda function, for instance `https://<someCode>.execute-api.us-west-2.amazonaws.com/api/`
 
 ### Config File for the indexer
 
