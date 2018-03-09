@@ -16,25 +16,10 @@ For the Access Policy, copy the contents of policies/elasticsearch-policy.json a
 To find your `<AWS-account-ID>`, click "Select a Template" and click "Allow or deny access to one or more AWS accounts or IAM users". Then a pop-up will appear with your "AWS account ID".
 Take note of the Elasticsearch endpoint.
 
-### Configure AWS and create a Virtual Environment
-Clone this repository and `cd dss-azul-indexer`. Run `ls -ls /usr/bin/python*` to check whether Python 3.6 is installed. If not install it. Next, create a virtual environment with `virtualenv --python=python3.6 <envname>` and activate with `source <envname>/bin/activate`.
+### Build the AWS Lambda to handle Blue Box notifications
+Clone this repository and `cd dss-azul-indexer`. Run `ls -ls /usr/bin/python*` to check whether Python 3.6 is installed. If not install it. Next, create a virtual environment with `virtualenv --python=python3.6 <envname>` and activate it with `source <envname>/bin/activate`. Use your favorite editor to update the values for the Blue Box and Elasticsearch endpoints in the file `.env`. Do _not_ add protocols (e.g., `http:///` to any of the Endpoints. Make sure the ES_ENDPOINT does not have any trailing slashes. Now run `make deploy`. This will ask for your AWS credentials, and a name for the AWS Lambda. It should finish by reporting the call-back URL of the newly created Lambda function, for instance `https://<someCode>.execute-api.us-west-2.amazonaws.com/api/`
 
-Now run `make deploy`. This will ask for AWS credentials, and a name for the Lambda which handles the notifications.
-
-### Chalice
-
-Chalice is similar to Flask but is serverless and uses AWS Lambda.
-```
-pip install chalice
-chalice new-project
-```
-When prompted for project name, input `<your-indexer-lambda-application-name>`, (e.g., dss-indigo).
-
-Change the working directory to the newly created folder `<your-indexer-lambda-application-name>` (e.g., dss-indigo) and execute `chalice deploy`. Record the URL returned in the last line of stdout returned by this command - henceforth referred to as `<callback_url>`. This will create an AWS Lambda function called `dss-indigo` which will be updated using `chalice deploy`. Chalice automatically generated a folder `chalicelib/` and the files `rm app.py` and `rm requirements.txt`. Overwrite those by copying `app.py`, `requirements.txt` and `chalicelib/` from this repo and to the dss-indigo folder. Then execute
-
-`pip install -r requirements.txt`
-
-### Config File
+### Config File for the indexer
 
 `chalicelib/config.json` should contain the keys that you wish to add to the index documents. The structure of the config.json should mimic the metadata json file being looked at.
 
@@ -127,59 +112,6 @@ Given a config:
     "id"
   ]
  }
-```
-
-### Environment Variables
-In order to add environmental variables to Chalice, the variables must be added to three locations.
-Do not add protocols to any of the Endpoints. Make sure the ES_ENDPOINT does not have any trailing slashes.
-
-1) Edit Chalice  
-open `.chalice/config.json`  
-Replace the current file with the following, making sure to replace the <> with your information.  
-```
-{
-  "version": "2.0",
-  "app_name": "<your-indexer-lambda-application-name>",
-  "stages": {
-    "dev": {
-      "api_gateway_stage": "api",
-      "manage_iam_role":false,
-      "iam_role_arn":"arn:aws:iam::<AWS-account-ID>:role/<your-indexer-lambda-application-name>-dev",
-      "environment_variables": {
-         "ES_ENDPOINT":"<your elasticsearch endpoint>",
-         "BLUE_BOX_ENDPOINT":"<your blue box>",
-         "ES_INDEX":"<elasticsearch index to use>",
-         "INDEXER_NAME":"<your-indexer-lambda-application-name>",
-         "HOME":"/tmp"
-      }
-    }
-  }
-}
-```   
-
-2) Edit .profile
-open `~/.profile` and add the following items.
-
-```
-export ES_ENDPOINT=<your elasticsearch endpoint>
-export BLUE_BOX_ENDPOINT=<your blue box>
-export ES_INDEX=<elasticsearch index to use>
-export INDEXER_NAME=<your-indexer-lambda-application-name>
-export HOME=/tmp
-```
-
-run `. ~/.profile` to load the variables
-
-3) Edit Lambda
-
-Go to the AWS console, and then to your Lambda function and add the following environment variables:
-
-```
-ES_ENDPOINT  -->   <your elasticsearch endpoint>
-BLUE_BOX_ENDPOINT   -->   <your blue box>
-ES_INDEX  -->  <elasticsearch index to use>
-INDEXER_NAME  -->  <your-indexer-lambda-application-name>
-HOME --> /tmp
 ```
 
 ### Elasticsearch & Lambda
