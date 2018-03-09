@@ -2,18 +2,21 @@
 
 import os
 import json
+import click
 
 
-def subst_config_vars():
+@click.command()
+@click.argument('lambda_name')
+def subst_config_vars(lambda_name):
     """Obtain user values for AWS from environment variables. Then
     sustitute the value by updating config.json and write back
     to .chalice directory."""
 
-    fname = 'dss-blau/.chalice/config.json'
+    fname = lambda_name + '/.chalice/config.json'
     with open(fname, 'r') as fp:
         config = json.load(fp)
     # Get user-specific values.
-    config['stages']['dev']['manage_iam_role'] = False
+    config['stages']['dev']['manage_iam_role'] = False  # encoded by json pack.
     config['stages']['dev']['iam_role_arn'] = os.environ["IAM_ROLE_ARN"]
     es_endpoint = os.environ["ES_ENDPOINT"]
     blue_box_endpoint = os.environ["BLUE_BOX_ENDPOINT"]
@@ -31,9 +34,5 @@ def subst_config_vars():
         json.dump(config, fp)
 
 
-def main():
-    subst_config_vars()
-
-
 if __name__ == '__main__':
-    main()
+    subst_config_vars()
