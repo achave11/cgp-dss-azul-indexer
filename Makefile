@@ -16,6 +16,12 @@ deploy:
 	cd $$lambda_name && \
 	chalice deploy --no-autogen-policy
 
+teardown:
+	@echo "deleting AWS Lambda"
+	@read -p "Enter AWS-lambda name: " lambda_name; \
+	cd $$lambda_name && \
+	chalice delete --stage dev
+
 deploy-local:
 	@echo "deploying AWS local"
 	cd dss-blau && \
