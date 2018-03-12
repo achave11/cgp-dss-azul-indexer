@@ -8,11 +8,10 @@ deploy:
 	aws configure 
 	@read -p "Enter AWS-lambda name: " lambda_name; \
 	chalice new-project $$lambda_name; \
-	cp app.py $$lambda_name/app.py; \
+	cp app.py $$lambda_name; \
 	cp requirements.txt $$lambda_name/requirements.txt; \
-	source .env \
-	python subst_config_vars.py $$lambda_name;
-	cp -r chalicelib $$lambda_name/chalicelib;
+	source .env && python subst_config_vars.py $$lambda_name; \
+	cp -r chalicelib $$lambda_name; \
 	cd $$lambda_name && \
 	chalice deploy --no-autogen-policy
 
