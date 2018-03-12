@@ -7,6 +7,7 @@ deploy:
 	@echo "configuring AWS with your credentials"
 	pip install awscli --upgrade
 	aws configure
+	export ACC_NUM="$(aws sts get-caller-identity --query 'Account')"
 	@read -p "Enter AWS-lambda name: " lambda_name; \
 	chalice new-project $$lambda_name; \
 	cp app.py $$lambda_name/app.py; \
