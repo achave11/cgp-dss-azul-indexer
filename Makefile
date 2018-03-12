@@ -20,6 +20,7 @@ teardown:
 	@read -p "Enter AWS-lambda name: " lambda_name; \
 	cd $$lambda_name && \
 	chalice delete --stage dev
+	rm -rf $$lambda_name
 
 deploy-local:
 	@echo "deploying AWS local"
