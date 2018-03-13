@@ -12,10 +12,9 @@ def subst_config_vars(lambda_name):
     """Obtain user values for AWS from environment variables. Then
     sustitute the value by updating config.json and write back
     to .chalice directory."""
-    # Get account number.
+    # Get AWS account number.
     iam = boto3.resource('iam')
     account_id = iam.CurrentUser().arn.split(":")[4]
-    # aws sts get-caller-identity --query 'Account'
     fname = lambda_name + '/.chalice/config.json'
     with open(fname, 'r') as fp:
         config = json.load(fp)
@@ -27,14 +26,14 @@ def subst_config_vars(lambda_name):
     blue_box_endpoint = os.environ["BLUE_BOX_ENDPOINT"]
     es_index = os.environ["ES_INDEX"]
     indexer_name = lambda_name
-    home = os.environ["HOME"]
+    home = '/tmp'
     # Create dict from those.
     config_keys = ['ES_ENDPOINT', 'BLUE_BOX_ENDPOINT',
                    'ES_INDEX', 'INDEXER_NAME', 'HOME']
     config_vars = [es_endpoint, blue_box_endpoint,
                    es_index, indexer_name, home]
     config_params = dict(zip(config_keys, config_vars))
-    config['stages']['dev'].update(config_params)
+    config['stages']['dev']['environment_variables'] = config_params
     with open(fname, 'w') as fp:
         json.dump(config, fp)
 
