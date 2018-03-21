@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "app_name": "dss-azul-indexer-commons",
+  "stages": {
+    "dev": {
+      "api_gateway_stage": "api",
+      "manage_iam_role": false,
+      "iam_role_arn": "arn:aws:iam::719818754276:role/dss-azul-indexer-commons-dev",
+      "environment_variables": {
+        "ES_ENDPOINT": "search-dss-azul-commons-lx3ltgewjw5wiw2yrxftoqr7jy.us-west-2.es.amazonaws.com",
+        "BLUE_BOX_ENDPOINT": "commons-dss.ucsc-cgp-dev.org/v1",
+        "ES_INDEX": "fb_index",
+        "INDEXER_NAME": "dss-azul-indexer-commons",
+        "HOME": "/tmp"
+      }
+    }
+  }
+}
