@@ -12,9 +12,9 @@ parser = argparse.ArgumentParser(description='Process options the finder of gold
 #parser.add_argument('--assay-id', dest='assay_id', action='store',
 #                    default='Q3_DEMO-assay1', help='assay id')
 parser.add_argument('--dss-url', dest='dss_url', action='store',
-                    default='https://dss.staging.data.humancellatlas.org/v1/search?replica=aws', help='The url for the storage system.')
+                    default='https://commons-dss.ucsc-cgp-dev.org/v1/search?replica=aws', help='The url for the storage system.')
 parser.add_argument('--indexer-url', dest='repoCode', action='store',
-                    default='https://9b92wjnlgh.execute-api.us-west-2.amazonaws.com/dev/', help='The indexer URL')
+                    default='https://3kymd03wdj.execute-api.us-west-2.amazonaws.com/api/', help='The indexer URL')
 
 #Get the arguments into args
 args = parser.parse_args()
@@ -45,7 +45,7 @@ def parseResultEntry(result_entry):
     '''
     Helper function to parse the results from a single results entry
     '''
-    bundle_id = result_entry['bundle_id']
+    bundle_id = result_entry['bundle_fqid']
     bundle_uuid = bundle_id[:36]
     bundle_version = bundle_id[37:]
     return (bundle_uuid, bundle_version)
