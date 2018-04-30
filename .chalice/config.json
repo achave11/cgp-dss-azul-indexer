@@ -1,0 +1,18 @@
+{
+  "version": "2.0",
+  "app_name": "dss-azul-indexer-mbaumann",
+  "stages": {
+    "dev": {
+      "api_gateway_stage": "api",
+      "manage_iam_role":false,
+      "iam_role_arn":"arn:aws:iam::mbaumann@ucsc.edu:role/dss-azul-indexer-mbaumann",
+      "environment_variables": {
+         "ES_ENDPOINT":"search-geryl-azul-index-es5-7gneevsiydvxger75nx2lbgbxm.us-west-2.es.amazonaws.com",
+         "BLUE_BOX_ENDPOINT":"commons-dss.ucsc-cgp-dev.org/v1",
+         "ES_INDEX":"fb_index",
+         "INDEXER_NAME":"dss-azul-indexer-mbaumann",
+         "HOME":"/tmp"
+      }
+    }
+  }
+}
