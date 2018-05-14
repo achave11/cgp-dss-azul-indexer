@@ -257,7 +257,7 @@ ES_ENDPOINT=
 ES_ARN=
 ```
 
-If you don't supply the `ES_DOMAIN_NAME` value, the `make` file will automatically create a new ElasticSearch instance. 
+If you don't supply the `ES_ENDPOINT` value, the `make` file will automatically create a new ElasticSearch instance. 
 
 The `config/elasticsearch-config.json` and `config/ebs-config.json` files can be modified to change the shape of the ElasticSearch service instance and ElasticSearch Beanstalk. 
 

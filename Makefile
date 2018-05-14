@@ -4,7 +4,7 @@ include config/config.env
 export $(shell sed 's/=.*//' config/config.env)
 
 PYTHON := $(shell command -v python3 2> /dev/null)
-STAGE ?= development
+STAGE ?= dev
 
 all: setup_elasticsearch
 
@@ -34,7 +34,7 @@ update_chalice_with_default_files:
 	@if [ ! -d "${VIRTUALENV_NAME}" && -f "${CHALICE_PROJECT}/output_log.txt" ]; then $(MAKE) setup_chalice; fi
 	#copy files from the repo and update chalice
 	cd $(CHALICE_PROJECT) && rm app.py && rm requirements.txt
-	cp -a chalicelib/. $(CHALICE_PROJECT)/
+	cp -a chalicelib/ $(CHALICE_PROJECT)/
 	cp app.py $(CHALICE_PROJECT)/
 	cp requirements.txt $(CHALICE_PROJECT)/
 	#install requirements
@@ -58,11 +58,12 @@ change_es_lambda_policy: edit_env_variables
 	$(eval ES_ARN = $(shell ${VIRTUALENV_NAME}/bin/aws es --profile ${AWS_PROFILE} describe-elasticsearch-domain --domain-name \
 	$(ES_DOMAIN_NAME) | jq ".DomainStatus.ARN"))
 	rpl '<ELASTICSEARCH_ARN>' '${ES_ARN}' config/lambda-policy.json
-	$(VIRTUALENV_NAME)/bin/aws iam --profile $(AWS_PROFILE) update-assume-role-policy --role-name "$(CHALICE_PROJECT)-$(STAGE)" --policy-document file://"config/lambda-policy.json"
+	$(eval POLICY_NAME = $(shell ${VIRTUALENV_NAME}/bin/aws iam --profile ${AWS_PROFILE} list-role-policies --role-name "${CHALICE_PROJECT}-${STAGE}"))
+	$(VIRTUALENV_NAME)/bin/aws iam --profile $(AWS_PROFILE) put-role-policy --role-name "$(CHALICE_PROJECT)-$(STAGE)" --policy-name "$(POLICY_NAME)" --policy-document file://"config/lambda-policy.json"
 
 redeploy_chalice: change_es_lambda_policy
 	#redeploy chalice
-	cd $(CHALICE_PROJECT) && ../$(VIRTUALENV_NAME)/bin/chalice deploy --no-autogen-policy --stage $(STAGE)
+	cd $(CHALICE_PROJECT) && ../$(VIRTUALENV_NAME)/bin/chalice deploy --profile $(AWS_PROFILE) --no-autogen-policy --stage $(STAGE)
 	#write generated URLs and config values to a file for easy reference
 	$(eval ES_ENDPOINT = $(shell ${VIRTUALENV_NAME}/bin/aws es --profile ${AWS_PROFILE} describe-elasticsearch-domain --domain-name \
 	$(ES_DOMAIN_NAME) | jq ".DomainStatus.Endpoint"))
