@@ -45,7 +45,7 @@ edit_env_variables: update_chalice_with_default_files
 	$(eval ES_ENDPOINT = $(shell ${VIRTUALENV_NAME}/bin/aws es --profile ${AWS_PROFILE} describe-elasticsearch-domain --domain-name \
 	$(ES_DOMAIN_NAME) | jq ".DomainStatus.Endpoint"))
 	cd $(CHALICE_PROJECT) && rm .chalice/config.json && cp ../config/chalice/config.json .chalice/ && cd .chalice &&\
-	rpl '<INDEXER_LAMBDA_APPLICATION_NAME>' '${CHALICE_PROJECT}' config.json && rpl '<INDEX_TO_USE>' '${ES_INDEX}' config.json &&\
+	rpl '<INDEXER_LAMBDA_APPLICATION_NAME>' '${CHALICE_PROJECT}-${STAGE}' config.json && rpl '<INDEX_TO_USE>' '${ES_INDEX}' config.json &&\
 	rpl '<AWS_ACCOUNT_ID>' '${AWS_ACCOUNT_ID}' config.json && rpl '<ELASTICSEARCH_ENDPOINT>' '${ES_ENDPOINT}' config.json &&\
 	rpl '<BB_ENDPOINT>' '${BB_ENDPOINT}' config.json
 	#update lambda's environment variables
@@ -58,7 +58,7 @@ change_es_lambda_policy: edit_env_variables
 	$(eval ES_ARN = $(shell ${VIRTUALENV_NAME}/bin/aws es --profile ${AWS_PROFILE} describe-elasticsearch-domain --domain-name \
 	$(ES_DOMAIN_NAME) | jq ".DomainStatus.ARN"))
 	rpl '<ELASTICSEARCH_ARN>' '${ES_ARN}' config/lambda-policy.json
-	$(eval POLICY_NAME = $(shell ${VIRTUALENV_NAME}/bin/aws iam --profile ${AWS_PROFILE} list-role-policies --role-name "${CHALICE_PROJECT}-${STAGE}"))
+	$(eval POLICY_NAME = $(shell ${VIRTUALENV_NAME}/bin/aws iam --profile ${AWS_PROFILE} list-role-policies --role-name "${CHALICE_PROJECT}-${STAGE}" | jq ".PolicyNames[0]"))
 	$(VIRTUALENV_NAME)/bin/aws iam --profile $(AWS_PROFILE) put-role-policy --role-name "$(CHALICE_PROJECT)-$(STAGE)" --policy-name "$(POLICY_NAME)" --policy-document file://"config/lambda-policy.json"
 
 redeploy_chalice: change_es_lambda_policy
@@ -84,7 +84,8 @@ new_elasticsearch: setup_chalice
 	$(VIRTUALENV_NAME)/bin/aws es --profile $(AWS_PROFILE) create-elasticsearch-domain --domain-name "$(ES_DOMAIN_NAME)" \
 	--elasticsearch-cluster-config  file://"config/elasticsearch-config.json" \
 	--access-policies file://"config/elasticsearch-policy.json" \
-	--ebs-options file://"config/ebs-config.json" 
+	--ebs-options file://"config/ebs-config.json" \
+	--elasticsearch-version "5.5"
 	
 	#pause to give AWS extra seconds to get it configured
 	sleep 60
